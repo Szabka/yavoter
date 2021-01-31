@@ -1,0 +1,99 @@
+<project xmlns="http://maven.apache.org/POM/4.0.0"
+	xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+	xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+	<modelVersion>4.0.0</modelVersion>
+
+	<groupId>hu.kag</groupId>
+	<artifactId>yavoter</artifactId>
+	<version>0.0.1-SNAPSHOT</version>
+	<packaging>jar</packaging>
+
+	<name>yavoter</name>
+	<url>http://maven.apache.org</url>
+
+	<properties>
+		<project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
+		<java.version>11</java.version>
+	</properties>
+	<build>
+		<sourceDirectory>src/main/java</sourceDirectory>
+		<plugins>
+			<plugin>
+				<artifactId>maven-compiler-plugin</artifactId>
+				<version>3.8.1</version>
+				<configuration>
+					<release>11</release>
+				</configuration>
+			</plugin>
+			<plugin>
+				<groupId>org.codehaus.mojo</groupId>
+				<artifactId>appassembler-maven-plugin</artifactId>
+				<version>1.10</version>
+				<configuration>
+					<configurationSourceDirectory>src/main/config</configurationSourceDirectory>
+					<configurationDirectory>config</configurationDirectory>
+					<copyConfigurationDirectory>true</copyConfigurationDirectory>
+					<logsDirectory>log</logsDirectory>
+					<repositoryLayout>flat</repositoryLayout>
+					<repositoryName>lib</repositoryName>
+					<programs>
+						<program>
+							<mainClass>hu.kag.yavoter.App</mainClass>
+							<id>yavoter</id>
+						</program>
+					</programs>
+				</configuration>
+			</plugin>
+		</plugins>
+	</build>
+	<dependencies>
+		<!-- <dependency> <groupId>com.jagrosh</groupId> <artifactId>jda-utilities</artifactId> 
+			<version>2.1</version> <scope>compile</scope> <type>pom</type> </dependency> -->
+		<dependency>
+			<groupId>com.kcthota</groupId>
+			<artifactId>emoji4j</artifactId>
+			<version>6.0</version>
+		</dependency>
+		<dependency>
+			<groupId>net.dv8tion</groupId>
+			<artifactId>JDA</artifactId>
+			<version>4.2.0_227</version>
+			<exclusions>
+				<exclusion>
+					<groupId>club.minnced</groupId>
+					<artifactId>opus-java</artifactId>
+				</exclusion>
+			</exclusions>
+		</dependency>
+		<dependency>
+			<groupId>org.apache.logging.log4j</groupId>
+			<artifactId>log4j-api</artifactId>
+			<version>2.13.3</version>
+		</dependency>
+		<dependency>
+			<groupId>org.apache.logging.log4j</groupId>
+			<artifactId>log4j-core</artifactId>
+			<version>2.13.3</version>
+		</dependency>
+		<dependency>
+			<groupId>org.apache.logging.log4j</groupId>
+			<artifactId>log4j-slf4j-impl</artifactId>
+			<version>2.13.3</version>
+		</dependency>
+
+		<dependency>
+			<groupId>junit</groupId>
+			<artifactId>junit</artifactId>
+			<version>4.12</version>
+			<scope>test</scope>
+		</dependency>
+	</dependencies>
+
+	<repositories>
+		<repository>
+			<id>jcenter</id>
+			<name>jcenter-bintray</name>
+			<url>https://jcenter.bintray.com</url>
+		</repository>
+	</repositories>
+</project>
