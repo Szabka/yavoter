@@ -95,16 +95,25 @@ public class App {
 					event.getChannel().sendMessage("Jelenlévő képviselők szavazószáma: "+kr.getSumVote()).complete();
 				}
 			} else if (contentRaw.startsWith(".vote")) {
-				//event.getMessage().delete().queue();
-				KTRoom kr = new KTRoom(guild,guild.getVoiceChannelById(Config.get("votevcs", "696432415064850582")));
-				kv = new KTVote(kr,guild.getTextChannelById(Config.get("votetch", "690893435854389278")),contentRaw);
-				kv.refreshVoteState();
-			} else if (contentRaw.startsWith(".stop")) {
-				if (kv!=null) {
-					kv.stopVote();
-					kv=null;
-				}
-				event.getMessage().delete().queue();
+					//event.getMessage().delete().queue();
+					String fullCommand = contentRaw.substring(0,contentRaw.indexOf(" "));
+					if (fullCommand.startsWith(".votestart")) {
+						String[] data = contentRaw.substring(contentRaw.indexOf(" ") + 1).split(";");
+						String[] choicedata = new String[data.length - 1];
+						System.arraycopy(data, 0, choicedata, 0, choicedata.length);
+
+						KTRoom kr = new KTRoom(guild,
+								guild.getVoiceChannelById(Config.get("votevcs", "696432415064850582")));
+						kv = new KTVote(kr, guild.getTextChannelById(Config.get("votetch", "690893435854389278")),
+								fullCommand, data[0], choicedata);
+						kv.refreshVoteState(); // blokkol a vote vegeig
+					} else if (fullCommand.startsWith(".votestop")) {
+						if (kv!=null) {
+							kv.stopVote();
+							kv=null;
+						}
+						event.getMessage().delete().queue();
+					}
 			}
 		} catch (Exception e) {
 			log.warn("mse:", e);

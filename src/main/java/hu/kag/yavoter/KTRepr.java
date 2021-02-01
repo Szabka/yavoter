@@ -63,6 +63,10 @@ public class KTRepr {
 		}
 	}
 	
+	public String getVoteDetail() {
+		return getDetail()+" leadott "+getEffectiveVotes().size();
+	}
+	
 	public synchronized void registerVote(String voteTitle,Member m,String vote) {
 		log.info("incoming vote "+vote+" "+representatives);
 		StringBuilder mb = new StringBuilder();

@@ -112,6 +112,16 @@ public class KTRoom {
 		return aev;
 	}
 	
+	public List<String> getNoVoteList() {
+		List<String> aev = new LinkedList<>();
+		for (KTRepr r : votersByRole.values()) {
+			if (r.getVotes()<r.getEffectiveVotes().size()) {
+				aev.add(r.getVoteDetail());
+			}
+		}
+		return aev;
+	}
+	
 	
 	public String getVoterDetails() {
 		StringBuilder sb = new StringBuilder();
