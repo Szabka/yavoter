@@ -9,6 +9,8 @@ import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
 import net.dv8tion.jda.api.entities.Member;
+import net.dv8tion.jda.api.entities.Message;
+import net.dv8tion.jda.api.entities.PrivateChannel;
 import net.dv8tion.jda.api.entities.Role;
 
 public class KTRepr {
@@ -16,7 +18,7 @@ public class KTRepr {
 
 	boolean teacher;
 	int votes;
-	TreeMap<String,Member> representatives;
+	TreeMap<String,KTReprData> representatives;
 	Role vr;
 	Role cr;
 	LinkedList<String> votelist;
@@ -35,11 +37,15 @@ public class KTRepr {
 		if (!teacher&&cr==null) {
 			log.warn("reps is not teacher but no class role set:"+vm);
 		}
-		representatives.put(vm.getId(),vm);
+		representatives.put(vm.getId(),new KTReprData(vm));
 	}
 
 	public Collection<Member> getRepr() {
-		return representatives.values();
+		LinkedList<Member> ret = new LinkedList<>();
+		for (KTReprData r : representatives.values()) {
+			ret.add(r.m);
+		}
+		return ret;
 	}
 
 	public int getVotes() {
@@ -48,14 +54,14 @@ public class KTRepr {
 
 	public String getDetail() {
 		if (teacher) {
-			return vr.getName()+":"+representatives.values().iterator().next().getEffectiveName()+":"+votes+" szavazat";
+			return vr.getName()+":"+representatives.values().iterator().next().m.getEffectiveName()+":"+votes+" szavazat";
 		} else {
 			StringBuilder sb = new StringBuilder();
 			sb.append(vr.getName()).append("-").append(cr.getName()).append(":(");
 			boolean first=true;
-			for (Member r : representatives.values()) {
+			for (KTReprData r : representatives.values()) {
 				if (!first) sb.append(',');
-				sb.append(r.getEffectiveName());
+				sb.append(r.m.getEffectiveName());
 				first=false;
 			}
 			sb.append("):"+votes+" szavazat");
@@ -64,7 +70,20 @@ public class KTRepr {
 	}
 	
 	public String getVoteDetail() {
-		return getDetail()+" leadott "+getEffectiveVotes().size();
+		if (teacher) {
+			return vr.getName()+":"+representatives.values().iterator().next().m.getEffectiveName()+" leadott "+getEffectiveVotes().size();
+		} else {
+			StringBuilder sb = new StringBuilder();
+			sb.append(vr.getName()).append("-").append(cr.getName()).append(":(");
+			boolean first=true;
+			for (KTReprData r : representatives.values()) {
+				if (!first) sb.append(',');
+				sb.append(r.m.getEffectiveName());
+				first=false;
+			}
+			sb.append(")");
+			return sb.toString();
+		}
 	}
 	
 	public synchronized void registerVote(String voteTitle,Member m,String vote) {
@@ -88,8 +107,13 @@ public class KTRepr {
 			.append(vr.getName()).append("-").append(cr.getName()).append(" képviselőjeként : ** ").append(vote).append(" **");
 		}
 		String content = mb.toString();
-		for (Member r : representatives.values()) {
-			r.getUser().openPrivateChannel().flatMap(channel -> channel.sendMessage(content)).queue();
+		for (KTReprData r : representatives.values()) {
+			if (r.vm==null) {
+				r.pc=r.m.getUser().openPrivateChannel().complete();
+				r.vm=r.pc.sendMessage(content).complete();
+			} else {
+				r.vm.editMessage(content).queue();
+			}
 		}		
 	}
 	
@@ -100,5 +124,15 @@ public class KTRepr {
 			ret.addAll(votelist);
 		}
 		return ret;
+	}
+	
+	private class KTReprData {
+		Member m;
+		PrivateChannel pc;
+		Message vm;
+		
+		public KTReprData(Member _m) {
+			m=_m;
+		}
 	}
 }

@@ -2,11 +2,11 @@ package hu.kag.yavoter;
 
 import java.util.List;
 import java.util.TreeMap;
-import java.util.concurrent.atomic.AtomicInteger;
 
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
+import net.dv8tion.jda.api.JDA;
 import net.dv8tion.jda.api.entities.TextChannel;
 import net.dv8tion.jda.api.events.message.guild.react.GuildMessageReactionAddEvent;
 
@@ -24,16 +24,16 @@ public class KTVote {
 	
 	boolean voteActive;
 	
-	public KTVote(KTRoom _kr, TextChannel _voteChannel,String _command,String title,String[] data) {
+	public KTVote(JDA client,KTRoom _kr, TextChannel _voteChannel,String _command,String title,String[] data) {
 		this.kr = _kr;
 		this.voteChannel = _voteChannel;
 		
-		anon = _command.substring(0,_command.indexOf(" ")).contains("anon");
+		anon = _command.contains("anon");
 		voteTitle = title;
 		
 		voteActive=true;
 
-		vm = new VoteMessage(anon?"TITKOS SZAVAZÁS - "+voteTitle:voteTitle);
+		vm = new VoteMessage(client,voteTitle);
 		vm.addFields(data);
 		vm.sendtoChannel(voteChannel);
 		
@@ -43,7 +43,7 @@ public class KTVote {
 		int needVotes = kr.getSumVote();
 		while (voteActive) {
 			int sumEffectiveVote = kr.getSumEffectiveVote();
-			if (needVotes-sumEffectiveVote>3) { 
+			if (needVotes>sumEffectiveVote*4/3&&needVotes-sumEffectiveVote>3) {  
 				vm.updateFooter(sumEffectiveVote + " szavazat érkezett a " + needVotes + "-ból.");
 			} else if (needVotes-sumEffectiveVote==0) {
 				vm.updateFooter("Minden szavazó szavazott.");
@@ -54,8 +54,9 @@ public class KTVote {
 				for (String vd:kr.getNoVoteList()) {
 					sb.append("\n").append(vd);
 				}
+				vm.updateFooter(sb.toString());
 			}
-			try {
+			try { 
 				wait(2000);
 			} catch (InterruptedException e) {
 				log.warn("message refresher thread interrupted", e);
@@ -80,14 +81,14 @@ public class KTVote {
 		voteActive = false;
 		this.notifyAll();
 		List<String> allvotes=kr.getAllEffectiveVote();
-		TreeMap<String,AtomicInteger> voteaggr = new TreeMap<>();
+		TreeMap<String,Integer> voteaggr = new TreeMap<>();
 		for (String v : allvotes) {
-			AtomicInteger vc = voteaggr.get(v);
+			Integer vc = voteaggr.get(v);
 			if (vc==null) {
-				vc = new AtomicInteger();
-				voteaggr.put(v, vc);
+				voteaggr.put(v, 1);
+			} else {
+				voteaggr.put(v, vc+1);
 			}
-			vc.incrementAndGet();
 		}
 		vm.stopVote(voteaggr);
 	}

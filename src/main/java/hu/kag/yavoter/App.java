@@ -21,6 +21,7 @@ import net.dv8tion.jda.api.events.message.guild.GuildMessageReceivedEvent;
 import net.dv8tion.jda.api.events.message.guild.react.GuildMessageReactionAddEvent;
 import net.dv8tion.jda.api.hooks.ListenerAdapter;
 import net.dv8tion.jda.api.requests.GatewayIntent;
+import net.dv8tion.jda.api.utils.cache.CacheFlag;
 
 
 
@@ -61,6 +62,7 @@ public class App {
     public App() throws Exception {
     	JDABuilder b = JDABuilder.create(Config.get("token"),GatewayIntent.getIntents(GatewayIntent.DEFAULT))
     			.enableIntents(GatewayIntent.GUILD_MEMBERS)
+    			.disableCache(CacheFlag.ACTIVITY, CacheFlag.CLIENT_STATUS)
     			.addEventListeners(new AppListenerAdapter());
     	client = b.build();
     	client.awaitReady();
@@ -72,7 +74,7 @@ public class App {
 		String contentRaw = event.getMessage().getContentRaw();
 		try {
 			Guild guild = event.getGuild();
-			if (contentRaw.startsWith(".discover")) {
+			if (contentRaw.startsWith(".yadiscover")) {
 				log.info("g:" + guild.getId() + ":" + guild.getName());
 				for (VoiceChannel vc : guild.getVoiceChannels()) {
 					log.info("vc:" + vc.getId() + ":" + vc.getName());
@@ -87,27 +89,31 @@ public class App {
 					log.info("agm:" + t.getId() + ":" + t.getEffectiveName() + ":" + t.getRoles());
 				}
 				event.getChannel().sendMessage("Pong!").complete();
-			} else if (contentRaw.startsWith(".presence")) {
+			} else if (contentRaw.startsWith(".yapresence")) {
 				KTRoom kr = new KTRoom(guild,guild.getVoiceChannelById(Config.get("votevcs", "696432415064850582")));
 				if (contentRaw.contains("detail")) {
 					event.getChannel().sendMessage("Jelenlévő képviselők listája: \n"+kr.getVoterDetails()).complete();
 				} else {
 					event.getChannel().sendMessage("Jelenlévő képviselők szavazószáma: "+kr.getSumVote()).complete();
 				}
-			} else if (contentRaw.startsWith(".vote")) {
+			} else if (contentRaw.startsWith(".yavote")) {
 					//event.getMessage().delete().queue();
-					String fullCommand = contentRaw.substring(0,contentRaw.indexOf(" "));
-					if (fullCommand.startsWith(".votestart")) {
+					String fullCommand = contentRaw.indexOf(" ")<0?contentRaw:contentRaw.substring(0,contentRaw.indexOf(" "));
+					if (fullCommand.startsWith(".yavotestart")) {
+						if (kv!=null) {
+							kv.stopVote();
+							kv=null;
+						}
 						String[] data = contentRaw.substring(contentRaw.indexOf(" ") + 1).split(";");
 						String[] choicedata = new String[data.length - 1];
-						System.arraycopy(data, 0, choicedata, 0, choicedata.length);
+						System.arraycopy(data, 1, choicedata, 0, choicedata.length);
 
 						KTRoom kr = new KTRoom(guild,
 								guild.getVoiceChannelById(Config.get("votevcs", "696432415064850582")));
-						kv = new KTVote(kr, guild.getTextChannelById(Config.get("votetch", "690893435854389278")),
+						kv = new KTVote(client,kr, guild.getTextChannelById(Config.get("votetch", "690893435854389278")),
 								fullCommand, data[0], choicedata);
 						kv.refreshVoteState(); // blokkol a vote vegeig
-					} else if (fullCommand.startsWith(".votestop")) {
+					} else if (fullCommand.startsWith(".yavotestop")) {
 						if (kv!=null) {
 							kv.stopVote();
 							kv=null;
