@@ -87,7 +87,7 @@ public class KTRepr {
 	}
 	
 	public synchronized void registerVote(String voteTitle,Member m,String vote) {
-		log.info("incoming vote "+vote+" "+representatives);
+		if (log.isDebugEnabled()) log.debug("incoming vote "+vote+" "+representatives);
 		StringBuilder mb = new StringBuilder();
 		mb.append(voteTitle).append('\n');
 		votelist.addLast(vote);
@@ -108,11 +108,15 @@ public class KTRepr {
 		}
 		String content = mb.toString();
 		for (KTReprData r : representatives.values()) {
-			if (r.vm==null) {
-				r.pc=r.m.getUser().openPrivateChannel().complete();
-				r.vm=r.pc.sendMessage(content).complete();
+			if (r.vm == null) {
+				if (r.rm == null) {
+					r.pc = r.m.getUser().openPrivateChannel().complete();
+					r.rm = r.pc.sendMessage(content).complete();
+				} else {
+					r.rm.editMessage(content).queue();
+				}
 			} else {
-				r.vm.editMessage(content).queue();
+				r.vm.updateFooter(content.substring(voteTitle.length()+1)); // levagjuk a title-t.
 			}
 		}		
 	}
@@ -126,13 +130,35 @@ public class KTRepr {
 		return ret;
 	}
 	
+	public void createPrivVotes(String voteTitle, String[] data) {
+		for (KTReprData r : representatives.values()) {
+			r.vm = new VoteMessage(voteTitle, 2);
+			r.vm.addFields(data);
+			if (r.pc==null) {
+				r.pc = r.m.getUser().openPrivateChannel().complete();
+			}
+			r.vm.sendtoChannel(r.pc);
+		}		
+	}
+
 	private class KTReprData {
 		Member m;
 		PrivateChannel pc;
-		Message vm;
+		Message rm;
+		VoteMessage vm;
 		
 		public KTReprData(Member _m) {
 			m=_m;
 		}
 	}
+
+	public void createPrivVotes(TreeMap<String, Integer> voteaggr, String voteControlRole) {
+		for (KTReprData r : representatives.values()) {
+			boolean isVoteControl = r.m.getRoles().stream().anyMatch(role -> (role.getId().equals(voteControlRole)));
+			if (r.vm!=null) {
+				r.vm.stopVote(voteaggr,isVoteControl);
+			}
+		}		
+	}
+
 }

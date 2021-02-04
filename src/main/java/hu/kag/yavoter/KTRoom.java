@@ -21,6 +21,7 @@ public class KTRoom {
 	Guild guild;
 	VoiceChannel vc;
 	String teacherRole;
+	String voteControlRole;
 	Set<String> allroles;
 	Set<String> classroles;
 	
@@ -39,15 +40,17 @@ public class KTRoom {
 		votersByRole = new TreeMap<>();
 		votersByUserId = new TreeMap<>();
 		
+		voteControlRole = Config.get("role.votecontrol","805803639057940550");
 		log.info("vc:" + vc.getId() + ":" + vc.getName());
 		for (Member vm : vc.getMembers()) {
 			log.info("vcm:" + vm.getId() + ":" + vm.getEffectiveName() + ":" + vm.getRoles());
-			Role voterRole = getVoterRole(vm);
+			List<Role> vmrl = vm.getRoles();
+			Role voterRole = getVoterRole(vmrl);
 			if (voterRole!=null) {
 				String roleKey = getRoleKey(voterRole, vm);
 				KTRepr pr = votersByRole.get(roleKey);
 				if (pr==null) {
-					pr = isTeacherRole(voterRole)?new KTRepr(true,3,voterRole,null):new KTRepr(false,1,voterRole,getClassRole(vm));
+					pr = isTeacherRole(voterRole)?new KTRepr(true,3,voterRole,null):new KTRepr(false,1,voterRole,getClassRole(vmrl));
 					votersByRole.put(roleKey, pr);
 				}
 				pr.addRepr(vm);
@@ -64,13 +67,12 @@ public class KTRoom {
 		if (isTeacherRole(vr)) {
 			return teacherRole+"."+vm.getId();
 		} else {
-			return vr.getId()+"."+getClassRole(vm);
+			return vr.getId()+"."+getClassRole(vm.getRoles());
 		}
 		
 	}
 	
-	public Role getVoterRole(Member vm) {
-		List<Role> vmrl = vm.getRoles();
+	public Role getVoterRole(List<Role> vmrl) {
 		for (Role role : vmrl) {
 			if (allroles.contains(role.getId())) {
 				return role;
@@ -78,8 +80,7 @@ public class KTRoom {
 		}
 		return null;
 	}
-	public Role getClassRole(Member vm) {
-		List<Role> vmrl = vm.getRoles();
+	public Role getClassRole(List<Role> vmrl) {
 		for (Role role : vmrl) {
 			if (classroles.contains(role.getId())) {
 				return role;
@@ -142,6 +143,18 @@ public class KTRoom {
 		} else {
 			log.info("no right to vote: "+m);
 			m.getUser().openPrivateChannel().flatMap(channel -> channel.sendMessage("NEM SZAVAZHATSZ! Ha szerinted ez hiba, akkor szólj.")).queue();
+		}
+	}
+
+	public void createPrivVotes(String voteTitle, String[] data) {
+		for (KTRepr r : votersByRole.values()) {
+			r.createPrivVotes(voteTitle,data);
+		}
+	}
+
+	public void clearPrivVotes(TreeMap<String, Integer> voteaggr) {
+		for (KTRepr r : votersByRole.values()) {
+			r.createPrivVotes(voteaggr,voteControlRole);
 		}
 	}
 }

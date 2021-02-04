@@ -6,14 +6,15 @@ import java.util.TreeMap;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
-import net.dv8tion.jda.api.JDA;
+import net.dv8tion.jda.api.entities.Guild;
+import net.dv8tion.jda.api.entities.Member;
 import net.dv8tion.jda.api.entities.TextChannel;
 import net.dv8tion.jda.api.events.message.guild.react.GuildMessageReactionAddEvent;
+import net.dv8tion.jda.api.events.message.priv.react.PrivateMessageReactionAddEvent;
 
 public class KTVote {
 	private Logger log = LogManager.getLogger();
 
-	
 	KTRoom kr;
 	TextChannel voteChannel;
 	String command;
@@ -23,19 +24,28 @@ public class KTVote {
 	boolean anon;
 	
 	boolean voteActive;
+	Guild guild;
 	
-	public KTVote(JDA client,KTRoom _kr, TextChannel _voteChannel,String _command,String title,String[] data) {
+	public KTVote(Guild guild,KTRoom _kr, TextChannel _voteChannel,String _command,String title,String[] data) {
 		this.kr = _kr;
 		this.voteChannel = _voteChannel;
+		this.guild = guild;
 		
 		anon = _command.contains("anon");
 		voteTitle = title;
 		
 		voteActive=true;
 
-		vm = new VoteMessage(client,voteTitle);
-		vm.addFields(data);
-		vm.sendtoChannel(voteChannel);
+		if (anon) {
+			vm = new VoteMessage(voteTitle,1);
+			vm.addFields(data);
+			vm.sendtoChannel(voteChannel);
+			kr.createPrivVotes(voteTitle,data);
+		} else {
+			vm = new VoteMessage(voteTitle,0);
+			vm.addFields(data);
+			vm.sendtoChannel(voteChannel);
+		}
 		
 	}
 
@@ -73,6 +83,16 @@ public class KTVote {
 		}
 	}
 
+	public void handleReaction(PrivateMessageReactionAddEvent event) {
+		log.info("reaction received "+event.getUserId());
+		String voteKey = vm.getVoteKey(event.getReactionEmote());
+		Member m = guild.getMember(event.getUser());
+		if (voteKey!=null&&m!=null) {
+			kr.registerVote(voteTitle,m,voteKey);
+		}
+		//event.getReaction().removeReaction(event.getUser()).queue();
+	}
+
 	public String getMessageId() {
 		return vm.getMessageId();
 	}
@@ -90,7 +110,8 @@ public class KTVote {
 				voteaggr.put(v, vc+1);
 			}
 		}
-		vm.stopVote(voteaggr);
+		vm.stopVote(voteaggr,!anon);
+		if (anon) kr.clearPrivVotes(voteaggr);
 	}
 	
 }

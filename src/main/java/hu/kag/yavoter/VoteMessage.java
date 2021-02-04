@@ -10,12 +10,11 @@ import org.apache.logging.log4j.Logger;
 
 import emoji4j.EmojiUtils;
 import net.dv8tion.jda.api.EmbedBuilder;
-import net.dv8tion.jda.api.JDA;
 import net.dv8tion.jda.api.entities.Message;
+import net.dv8tion.jda.api.entities.MessageChannel;
 import net.dv8tion.jda.api.entities.MessageEmbed;
 import net.dv8tion.jda.api.entities.MessageEmbed.Field;
 import net.dv8tion.jda.api.entities.MessageReaction;
-import net.dv8tion.jda.api.entities.TextChannel;
 
 public class VoteMessage {
 	private static final String[] chooserEmojis = new String[] {"🇦", "🇧", "🇨", "🇩", "🇪", "🇫", "🇬", "🇭", "🇮", "🇯", "🇰", "🇱", "🇲", "🇳", "🇴", "🇵", "🇶", "🇷", "🇸", "🇹", "🇺", "🇻", "🇼", "🇽", "🇾", "🇿"};
@@ -28,14 +27,16 @@ public class VoteMessage {
 	LinkedHashMap<String,String> options;
 	String lastcustomMessage;
 	String title;
+	int mode; // 0==publikus, 1==titkos kozoscsatornai, 2== titkos privatuzenet
 	
-	public VoteMessage(JDA client,String title) {
+	public VoteMessage(String title, int mode) {
 		this.title = title;
+		this.mode = mode;
 		
 		options = new LinkedHashMap<>();
 		eb = new EmbedBuilder();
 		eb.setTitle(title);
-		eb.setFooter(FOOTERBASE);
+		if (mode!=1) eb.setFooter(FOOTERBASE);
 		eb.setColor(0xFF0000);
 		eb.setThumbnail("https://www.mediafire.com/convkey/6b94/q2jiww8rly7xn585g.jpg");
 		
@@ -55,9 +56,7 @@ public class VoteMessage {
 		}
 	}
 
-	public void sendtoChannel(TextChannel voteChannel) {
-		MessageEmbed embed = eb.build();
-		m = voteChannel.sendMessage(embed).complete();
+	public void sendtoChannel(MessageChannel voteChannel) {
 		
 		for (Field f:eb.getFields()) {
 			String fv = f.getValue();
@@ -67,7 +66,17 @@ public class VoteMessage {
 				fv = fv.substring(2, fv.length()-1);
 				options.put(fv,f.getName());
 			}
-			m.addReaction(fv).submit(); // A sorrendiseg miatt megvarjuk
+		}
+		if (mode==1) eb.getFields().clear();
+		
+		MessageEmbed embed = eb.build();
+		m = voteChannel.sendMessage(embed).complete();
+		
+		if (mode!=1) {
+			for (Field f:eb.getFields()) {
+				String fv = f.getValue();
+				m.addReaction(fv).submit(); // A sorrendiseg miatt megvarjuk
+			}
 		}
 	}
 	
@@ -95,7 +104,7 @@ public class VoteMessage {
 		return m!=null?m.getId():"";
 	}
 
-	public void stopVote(TreeMap<String,Integer> voteaggr) {
+	public void stopVote(TreeMap<String,Integer> voteaggr,boolean voteControl) {
 		Integer min=null,max=null;
 		int sum=0,mincount=0;
 		StringBuilder sb = new StringBuilder();
@@ -104,7 +113,7 @@ public class VoteMessage {
 			if (value==null) {
 				value=Integer.valueOf(0);
 			}
-			sb.append("**"+o.getValue()+"** "+value+" szavazat\n");
+			if (mode==0||voteControl) sb.append("**"+o.getValue()+"** "+value+" szavazat\n");
 			if (!"Tartózkodom".equals(o.getValue())) {
 				if (min==null||value<min) {
 					min=value;
@@ -117,7 +126,7 @@ public class VoteMessage {
 			}
 			sum=sum+value;
 		}
-		if (max>=(sum/2+1)) { // van nyertes ag
+		if (max!=null&&max>=(sum/2+1)) { // van nyertes ag
 			sb.append("van nyertes\n"); 
 		} else if (mincount==1) {
 			sb.append("van egyértelmű kieső\n");
@@ -141,13 +150,11 @@ public class VoteMessage {
 			}
 		}
 		
-		
-		
 		eb.getFields().clear();
 		eb.setFooter(null);
 		eb.setDescription(sb.toString());
 		m.editMessage(eb.build()).complete();
-		m.clearReactions().queue();
+		if (mode==0) m.clearReactions().queue();
 	}
 
 }

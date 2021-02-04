@@ -19,6 +19,7 @@ import net.dv8tion.jda.api.entities.Role;
 import net.dv8tion.jda.api.entities.VoiceChannel;
 import net.dv8tion.jda.api.events.message.guild.GuildMessageReceivedEvent;
 import net.dv8tion.jda.api.events.message.guild.react.GuildMessageReactionAddEvent;
+import net.dv8tion.jda.api.events.message.priv.react.PrivateMessageReactionAddEvent;
 import net.dv8tion.jda.api.hooks.ListenerAdapter;
 import net.dv8tion.jda.api.requests.GatewayIntent;
 import net.dv8tion.jda.api.utils.cache.CacheFlag;
@@ -110,7 +111,7 @@ public class App {
 
 						KTRoom kr = new KTRoom(guild,
 								guild.getVoiceChannelById(Config.get("votevcs", "696432415064850582")));
-						kv = new KTVote(client,kr, guild.getTextChannelById(Config.get("votetch", "690893435854389278")),
+						kv = new KTVote(guild,kr, guild.getTextChannelById(Config.get("votetch", "690893435854389278")),
 								fullCommand, data[0], choicedata);
 						kv.refreshVoteState(); // blokkol a vote vegeig
 					} else if (fullCommand.startsWith(".yavotestop")) {
@@ -154,17 +155,19 @@ public class App {
 			}
 		}
 		
-    	/* privat uzenetes szupertitkos szavazas
-		@Override
-		public void onPrivateMessageReceived(PrivateMessageReceivedEvent event) {
-			super.onPrivateMessageReceived(event);
-		}
-
+		// privat uzenetes szupertitkos szavazas
 		@Override
 		public void onPrivateMessageReactionAdd(PrivateMessageReactionAddEvent event) {
-			super.onPrivateMessageReactionAdd(event);
+			if (kv!=null&&!event.getUserId().equals(Config.get("botuserid", "803237413542428722"))) {
+				ForkJoinPool.commonPool().execute(new Runnable() {
+					@Override
+					public void run() {
+						kv.handleReaction(event );
+					}
+				});
+			}
 		}
-    	*/
+
     }
     
 }
