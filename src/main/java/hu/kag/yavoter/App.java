@@ -20,6 +20,7 @@ import net.dv8tion.jda.api.entities.VoiceChannel;
 import net.dv8tion.jda.api.events.message.guild.GuildMessageReceivedEvent;
 import net.dv8tion.jda.api.events.message.guild.react.GuildMessageReactionAddEvent;
 import net.dv8tion.jda.api.events.message.priv.react.PrivateMessageReactionAddEvent;
+import net.dv8tion.jda.api.events.message.priv.react.PrivateMessageReactionRemoveEvent;
 import net.dv8tion.jda.api.hooks.ListenerAdapter;
 import net.dv8tion.jda.api.requests.GatewayIntent;
 import net.dv8tion.jda.api.utils.cache.CacheFlag;
@@ -158,6 +159,18 @@ public class App {
 		// privat uzenetes szupertitkos szavazas
 		@Override
 		public void onPrivateMessageReactionAdd(PrivateMessageReactionAddEvent event) {
+			if (kv!=null&&!event.getUserId().equals(Config.get("botuserid", "803237413542428722"))) {
+				ForkJoinPool.commonPool().execute(new Runnable() {
+					@Override
+					public void run() {
+						kv.handleReaction(event );
+					}
+				});
+			}
+		}
+
+		@Override
+		public void onPrivateMessageReactionRemove(PrivateMessageReactionRemoveEvent event) {
 			if (kv!=null&&!event.getUserId().equals(Config.get("botuserid", "803237413542428722"))) {
 				ForkJoinPool.commonPool().execute(new Runnable() {
 					@Override

@@ -10,6 +10,7 @@ import net.dv8tion.jda.api.entities.Guild;
 import net.dv8tion.jda.api.entities.Member;
 import net.dv8tion.jda.api.entities.TextChannel;
 import net.dv8tion.jda.api.events.message.guild.react.GuildMessageReactionAddEvent;
+import net.dv8tion.jda.api.events.message.priv.react.GenericPrivateMessageReactionEvent;
 import net.dv8tion.jda.api.events.message.priv.react.PrivateMessageReactionAddEvent;
 
 public class KTVote {
@@ -83,7 +84,7 @@ public class KTVote {
 		}
 	}
 
-	public void handleReaction(PrivateMessageReactionAddEvent event) {
+	public void handleReaction(GenericPrivateMessageReactionEvent event) {
 		log.info("reaction received "+event.getUserId());
 		String voteKey = vm.getVoteKey(event.getReactionEmote());
 		Member m = guild.getMember(event.getUser());
