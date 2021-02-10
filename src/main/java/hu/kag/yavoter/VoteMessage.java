@@ -73,8 +73,7 @@ public class VoteMessage {
 		m = voteChannel.sendMessage(embed).complete();
 		
 		if (mode!=1) {
-			for (Field f:eb.getFields()) {
-				String fv = f.getValue();
+			for (String fv:options.keySet()) {
 				m.addReaction(fv).submit(); // A sorrendiseg miatt megvarjuk
 			}
 		}
@@ -112,6 +111,7 @@ public class VoteMessage {
 			Integer value = voteaggr.get(o.getValue());
 			if (value==null) {
 				value=Integer.valueOf(0);
+				voteaggr.put(o.getValue(),value);
 			}
 			if (mode==0||voteControl) sb.append("**"+o.getValue()+"** "+value+" szavazat\n");
 			if (!"Tartózkodom".equals(o.getValue())) {
@@ -129,23 +129,31 @@ public class VoteMessage {
 		if (max!=null&&max>=(sum/2+1)) { // van nyertes ag
 			sb.append("van nyertes\n"); 
 		} else if (mincount==1) {
-			sb.append("van egyértelmű kieső\n");
-			sb.append(".yavotestart ").append(title).append(";");
-			LinkedList<Field> printFields = new LinkedList<>(eb.getFields());
-			printFields.removeLast();
-			for (Field f:printFields) {
-				if (voteaggr.get(f.getName())!=min) {
-					sb.append(f.getName()).append(';');
+			if (options.size()>3) {
+				sb.append("van egyértelmű kieső\n");
+				sb.append(".yavotestart");
+				if (mode>0) sb.append("anon");
+				sb.append(' ').append(title).append(";");
+				LinkedList<String> printFields = new LinkedList<>(options.values());
+				if (printFields.size()>0) printFields.removeLast();
+				for (String f:printFields) {
+					if (voteaggr.get(f)!=min) {
+						sb.append(f).append(';');
+					}
 				}
 			}
 		} else {
-			sb.append("nincs egyértelmű kieső, szétszavazás\n");
-			sb.append(".yavotestart ").append(title).append(";");
-			LinkedList<Field> printFields = new LinkedList<>(eb.getFields());
-			printFields.removeLast();
-			for (Field f:printFields) {
-				if (voteaggr.get(f.getName())==min) {
-					sb.append(f.getName()).append(';');
+			if (options.size()>3) {
+				sb.append("nincs egyértelmű kieső, szétszavazás\n");
+				sb.append(".yavotestart");
+				if (mode>0) sb.append("anon");
+				sb.append(' ').append(title).append(";");
+				LinkedList<String> printFields = new LinkedList<>(options.values());
+				if (printFields.size()>0) printFields.removeLast();
+				for (String f:printFields) {
+					if (voteaggr.get(f)==min) {
+						sb.append(f).append(';');
+					}
 				}
 			}
 		}

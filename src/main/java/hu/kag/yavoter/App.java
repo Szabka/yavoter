@@ -2,6 +2,8 @@ package hu.kag.yavoter;
 
 import java.io.File;
 import java.net.URI;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
 import java.util.concurrent.ForkJoinPool;
 
 import org.apache.logging.log4j.LogManager;
@@ -60,8 +62,10 @@ public class App {
     
     JDA client;
     KTVote kv;
+    ExecutorService es;
     
     public App() throws Exception {
+    	es = Executors.newCachedThreadPool();
     	JDABuilder b = JDABuilder.create(Config.get("token"),GatewayIntent.getIntents(GatewayIntent.DEFAULT))
     			.enableIntents(GatewayIntent.GUILD_MEMBERS)
     			.disableCache(CacheFlag.ACTIVITY, CacheFlag.CLIENT_STATUS)
@@ -134,7 +138,7 @@ public class App {
 		public void onGuildMessageReceived(final GuildMessageReceivedEvent event) {
 			if (event.getAuthor().isBot()) return;
 			// switch processing thread
-			ForkJoinPool.commonPool().execute(new Runnable() {
+			es.execute(new Runnable() {
 				@Override
 				public void run() {
 					handleChatMessage(event );
@@ -147,7 +151,7 @@ public class App {
 		@Override
 		public void onGuildMessageReactionAdd(GuildMessageReactionAddEvent event) {
 			if (kv!=null&&!event.getUserId().equals(Config.get("botuserid", "803237413542428722"))&&event.getMessageId().equals(kv.getMessageId())) {
-				ForkJoinPool.commonPool().execute(new Runnable() {
+				es.execute(new Runnable() {
 					@Override
 					public void run() {
 						kv.handleReaction(event );
@@ -160,7 +164,7 @@ public class App {
 		@Override
 		public void onPrivateMessageReactionAdd(PrivateMessageReactionAddEvent event) {
 			if (kv!=null&&!event.getUserId().equals(Config.get("botuserid", "803237413542428722"))) {
-				ForkJoinPool.commonPool().execute(new Runnable() {
+				es.execute(new Runnable() {
 					@Override
 					public void run() {
 						kv.handleReaction(event );
@@ -172,7 +176,7 @@ public class App {
 		@Override
 		public void onPrivateMessageReactionRemove(PrivateMessageReactionRemoveEvent event) {
 			if (kv!=null&&!event.getUserId().equals(Config.get("botuserid", "803237413542428722"))) {
-				ForkJoinPool.commonPool().execute(new Runnable() {
+				es.execute(new Runnable() {
 					@Override
 					public void run() {
 						kv.handleReaction(event );
