@@ -97,26 +97,26 @@ public class KTRoom {
 		return sum;
 	}
 
-	public int getSumEffectiveVote() {
+	public int getSumEffectiveVote(boolean multi) {
 		int sum = 0;
 		for (KTRepr r : votersByRole.values()) {
-			sum+=r.getEffectiveVotes().size();
+			sum+=r.getEffectiveVotes(multi).size();
 		}
 		return sum;
 	}
 
-	public List<String> getAllEffectiveVote() {
+	public List<String> getAllEffectiveVote(boolean multi) {
 		List<String> aev = new LinkedList<>();
 		for (KTRepr r : votersByRole.values()) {
-			aev.addAll(r.getEffectiveVotes());
+			aev.addAll(r.getEffectiveVotes(multi));
 		}
 		return aev;
 	}
 	
-	public List<String> getNoVoteList() {
+	public List<String> getNoVoteList(boolean multi) {
 		List<String> aev = new LinkedList<>();
 		for (KTRepr r : votersByRole.values()) {
-			if (r.getVotes()>r.getEffectiveVotes().size()) {
+			if (r.getVotes()>r.getEffectiveVotes(multi).size()) {
 				aev.add(r.getVoteDetail());
 			}
 		}
@@ -136,10 +136,10 @@ public class KTRoom {
 		return sb.toString();
 	}
 
-	public void registerVote(String voteTitle,Member m, String vote) {
+	public void registerVote(String voteTitle,Member m, String vote, boolean multi) {
 		KTRepr krepr = votersByUserId.get(m.getId());
 		if (krepr!=null) {
-			krepr.registerVote(voteTitle,m,vote);
+			krepr.registerVote(voteTitle,m,vote,multi);
 		} else {
 			log.info("no right to vote: "+m);
 			m.getUser().openPrivateChannel().flatMap(channel -> channel.sendMessage("NEM SZAVAZHATSZ! Ha szerinted ez hiba, akkor szólj.")).queue();

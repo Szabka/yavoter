@@ -71,7 +71,7 @@ public class KTRepr {
 	
 	public String getVoteDetail() {
 		if (teacher) {
-			return vr.getName()+":"+representatives.values().iterator().next().m.getEffectiveName()+" leadott "+getEffectiveVotes().size();
+			return vr.getName()+":"+representatives.values().iterator().next().m.getEffectiveName()+" leadott "+getEffectiveVotes(false).size();
 		} else {
 			StringBuilder sb = new StringBuilder();
 			sb.append(vr.getName()).append("-").append(cr.getName()).append(":(");
@@ -86,25 +86,42 @@ public class KTRepr {
 		}
 	}
 	
-	public synchronized void registerVote(String voteTitle,Member m,String vote) {
+	public synchronized void registerVote(String voteTitle,Member m,String vote, boolean multi) {
 		if (log.isDebugEnabled()) log.debug("incoming vote "+vote+" "+representatives);
 		StringBuilder mb = new StringBuilder();
 		mb.append(voteTitle).append('\n');
-		votelist.addLast(vote);
-		if (votelist.size()>votes) votelist.removeFirst(); // a legregebbi kiszedese
-
-		if (teacher) {
-			switch (votelist.size()) {
-			case 1:
-				mb.append("Ezt a szavazatot kapta a rendszer tőled: ").append(vote).append("\nEgyéb szavazat hiányában ez automatikusan 3 szavazatként van kezelve.");
-				break;
-			default:
-				mb.append("Ezeket a szavazatokat kapta a rendszer tőled: ").append(votelist);
-				break;
+		if (!multi) {
+			votelist.addLast(vote);
+			if (votelist.size()>votes) {
+				votelist.removeFirst(); // a legregebbi kiszedese
 			}
 		} else {
-			mb.append(m.getEffectiveName()).append(" ezt a szavazatot adta le a ")
-			.append(vr.getName()).append("-").append(cr.getName()).append(" képviselőjeként : ** ").append(vote).append(" **");
+			if (votelist.contains(vote)) {
+				votelist.remove(vote);
+			} else {
+				votelist.addLast(vote);
+			}
+		}
+
+		if (!multi) { 
+			if (teacher) {
+				switch (votelist.size()) {
+				case 1:
+					mb.append("Ezt a szavazatot kapta a rendszer tőled: ").append(vote).append("\nEgyéb szavazat hiányában ez automatikusan 3 szavazatként van kezelve.");
+					break;
+				default:
+					mb.append("Ezeket a szavazatokat kapta a rendszer tőled: ").append(votelist);
+					break;
+				}
+			} else {
+				mb.append(m.getEffectiveName()).append(" ezt a szavazatot adta le a ")
+				.append(vr.getName()).append("-").append(cr.getName()).append(" képviselőjeként : ** ").append(vote).append(" **");
+			}
+		} else {
+			mb.append("Ezeket a szavazatokat kapta a rendszer tőled: ").append(votelist);
+			if (teacher) {
+				mb.append("\nmindegyik szavazat automatikusan 3 szavazatként van kezelve.");
+			}
 		}
 		String content = mb.toString();
 		for (KTReprData r : representatives.values()) {
@@ -121,9 +138,9 @@ public class KTRepr {
 		}		
 	}
 	
-	public synchronized List<String> getEffectiveVotes() {
+	public synchronized List<String> getEffectiveVotes(boolean multi) {
 		LinkedList<String> ret = new LinkedList<>(votelist);
-		if (teacher&&votelist.size()==1) {
+		if (teacher&&(votelist.size()==1||multi)) {
 			ret.addAll(votelist);
 			ret.addAll(votelist);
 		}
@@ -149,6 +166,11 @@ public class KTRepr {
 		
 		public KTReprData(Member _m) {
 			m=_m;
+		}
+
+		@Override
+		public String toString() {
+			return "KTReprData [m=" + m.getEffectiveName() + "]";
 		}
 	}
 

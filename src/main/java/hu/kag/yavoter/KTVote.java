@@ -11,7 +11,6 @@ import net.dv8tion.jda.api.entities.Member;
 import net.dv8tion.jda.api.entities.TextChannel;
 import net.dv8tion.jda.api.events.message.guild.react.GuildMessageReactionAddEvent;
 import net.dv8tion.jda.api.events.message.priv.react.GenericPrivateMessageReactionEvent;
-import net.dv8tion.jda.api.events.message.priv.react.PrivateMessageReactionAddEvent;
 
 public class KTVote {
 	private Logger log = LogManager.getLogger();
@@ -23,6 +22,7 @@ public class KTVote {
 	VoteMessage vm;
 	String voteTitle;
 	boolean anon;
+	boolean multi;
 	
 	boolean voteActive;
 	Guild guild;
@@ -33,6 +33,7 @@ public class KTVote {
 		this.guild = guild;
 		
 		anon = _command.contains("anon");
+		multi = _command.contains("multi");
 		voteTitle = title;
 		
 		voteActive=true;
@@ -53,7 +54,7 @@ public class KTVote {
 	public synchronized void refreshVoteState() {
 		int needVotes = kr.getSumVote();
 		while (voteActive) {
-			int sumEffectiveVote = kr.getSumEffectiveVote();
+			int sumEffectiveVote = kr.getSumEffectiveVote(multi);
 			if (needVotes>sumEffectiveVote*4/3&&needVotes-sumEffectiveVote>3) {  
 				vm.updateFooter(sumEffectiveVote + " szavazat érkezett a " + needVotes + "-ból.");
 			} else if (needVotes-sumEffectiveVote==0) {
@@ -62,7 +63,7 @@ public class KTVote {
 			} else { // Kiirjuk a renitens még nem szavazók listáját jól
 				StringBuilder sb = new StringBuilder();
 				sb.append("Még szavazniuk kell:");
-				for (String vd:kr.getNoVoteList()) {
+				for (String vd:kr.getNoVoteList(multi)) {
 					sb.append("\n").append(vd);
 				}
 				vm.updateFooter(sb.toString());
@@ -80,7 +81,7 @@ public class KTVote {
 		event.getReaction().removeReaction(event.getUser()).queue();
 		String voteKey = vm.getVoteKey(event.getReactionEmote());
 		if (voteKey!=null) {
-			kr.registerVote(voteTitle,event.getMember(),voteKey);
+			kr.registerVote(voteTitle,event.getMember(),voteKey,multi);
 		}
 	}
 
@@ -89,7 +90,7 @@ public class KTVote {
 		String voteKey = vm.getVoteKey(event.getReactionEmote());
 		Member m = guild.getMember(event.getUser());
 		if (voteKey!=null&&m!=null) {
-			kr.registerVote(voteTitle,m,voteKey);
+			kr.registerVote(voteTitle,m,voteKey,multi);
 		}
 		//event.getReaction().removeReaction(event.getUser()).queue();
 	}
@@ -101,7 +102,7 @@ public class KTVote {
 	public synchronized void stopVote() {
 		voteActive = false;
 		this.notifyAll();
-		List<String> allvotes=kr.getAllEffectiveVote();
+		List<String> allvotes=kr.getAllEffectiveVote(multi);
 		TreeMap<String,Integer> voteaggr = new TreeMap<>();
 		for (String v : allvotes) {
 			Integer vc = voteaggr.get(v);

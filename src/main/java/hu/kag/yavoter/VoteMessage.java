@@ -15,6 +15,7 @@ import net.dv8tion.jda.api.entities.MessageChannel;
 import net.dv8tion.jda.api.entities.MessageEmbed;
 import net.dv8tion.jda.api.entities.MessageEmbed.Field;
 import net.dv8tion.jda.api.entities.MessageReaction;
+import net.dv8tion.jda.api.exceptions.ErrorResponseException;
 
 public class VoteMessage {
 	private static final String[] chooserEmojis = new String[] {"🇦", "🇧", "🇨", "🇩", "🇪", "🇫", "🇬", "🇭", "🇮", "🇯", "🇰", "🇱", "🇲", "🇳", "🇴", "🇵", "🇶", "🇷", "🇸", "🇹", "🇺", "🇻", "🇼", "🇽", "🇾", "🇿"};
@@ -161,8 +162,14 @@ public class VoteMessage {
 		eb.getFields().clear();
 		eb.setFooter(null);
 		eb.setDescription(sb.toString());
-		m.editMessage(eb.build()).complete();
-		if (mode==0) m.clearReactions().queue();
+		try {
+			m.editMessage(eb.build()).complete();
+			if (mode==0) m.clearReactions().queue();
+		} catch (ErrorResponseException ere) {
+			if (ere.getErrorCode()==10008) {
+				log.info("vote message not found");
+			}
+		}
 	}
 
 }

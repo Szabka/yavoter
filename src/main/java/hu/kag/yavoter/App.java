@@ -4,7 +4,6 @@ import java.io.File;
 import java.net.URI;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
-import java.util.concurrent.ForkJoinPool;
 
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
@@ -143,7 +142,6 @@ public class App {
 				public void run() {
 					handleChatMessage(event );
 				}
-
 			});
 			
 		}
